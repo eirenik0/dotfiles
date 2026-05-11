@@ -23,6 +23,8 @@ if [[ "$OS" == "linux" ]]; then
       git \
       ca-certificates \
       build-essential \
+      procps \
+      file \
       zsh \
       fzf \
       direnv \
@@ -33,5 +35,16 @@ if [[ "$OS" == "linux" ]]; then
       unzip
   else
     echo "No apt found. Skipping system package installation."
+  fi
+
+  if [[ ! -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
+    NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  fi
+
+  if [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
+    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+  else
+    echo "Homebrew was not installed at /home/linuxbrew/.linuxbrew."
+    exit 1
   fi
 fi

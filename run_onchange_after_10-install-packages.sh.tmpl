@@ -10,12 +10,18 @@ BREWFILE="${SOURCE_DIR}/Brewfile"
 
 echo "[chezmoi] Installing user packages for ${OS}..."
 
-if command -v brew >/dev/null 2>&1; then
-  brew update
-  brew bundle --file "$BREWFILE"
-else
+brew_bin="$(command -v brew 2>/dev/null || true)"
+if [[ -z "$brew_bin" && -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
+  brew_bin="/home/linuxbrew/.linuxbrew/bin/brew"
+fi
+
+if [[ -z "$brew_bin" ]]; then
   echo "Homebrew not found. Skipping Brewfile."
   echo "Install Homebrew/Linuxbrew if you want brew-managed CLI tools."
+else
+  eval "$("$brew_bin" shellenv)"
+  brew update
+  brew bundle --file "$BREWFILE"
 fi
 
 if command -v fzf >/dev/null 2>&1; then

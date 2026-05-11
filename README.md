@@ -159,7 +159,7 @@ Use templates, encrypted secrets, or a password manager for sensitive files.
 
 ## Machine-specific config
 
-The shell and terminal configs use OS and tool guards for optional integrations such as `brew`, `mise`, `direnv`, `jj`, `terraform`, `op`, `starship`, Java, and Android tooling.
+The shell and terminal configs use OS and tool guards for optional integrations such as `brew`, `mise`, `direnv`, `jj`, `terraform`, `op`, `starship`, Java, and Android tooling. Ubuntu also installs Homebrew so the `Brewfile` can be applied there.
 
 Prefer templates instead of separate config files per OS when behavior differs by platform.
 
