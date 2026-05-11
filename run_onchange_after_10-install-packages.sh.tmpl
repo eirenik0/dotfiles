@@ -7,12 +7,13 @@ set -euo pipefail
 OS="{{ .chezmoi.os }}"
 SOURCE_DIR="{{ .chezmoi.sourceDir }}"
 BREWFILE="${SOURCE_DIR}/Brewfile"
+BREW_PREFIX="$HOME/.linuxbrew"
 
 echo "[chezmoi] Installing user packages for ${OS}..."
 
 brew_bin="$(command -v brew 2>/dev/null || true)"
-if [[ -z "$brew_bin" && -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
-  brew_bin="/home/linuxbrew/.linuxbrew/bin/brew"
+if [[ -z "$brew_bin" && -x "$BREW_PREFIX/bin/brew" ]]; then
+  brew_bin="$BREW_PREFIX/bin/brew"
 fi
 
 if [[ -z "$brew_bin" ]]; then
@@ -24,9 +25,12 @@ else
   brew bundle --file "$BREWFILE"
 fi
 
-if command -v fzf >/dev/null 2>&1; then
-  if [[ -x "$(brew --prefix 2>/dev/null)/opt/fzf/install" ]]; then
-    "$(brew --prefix)/opt/fzf/install" --key-bindings --completion --no-update-rc || true
+if [[ -n "$brew_bin" ]]; then
+  if command -v fzf >/dev/null 2>&1; then
+    brew_prefix="$("$brew_bin" --prefix)"
+    if [[ -x "$brew_prefix/opt/fzf/install" ]]; then
+      "$brew_prefix/opt/fzf/install" --key-bindings --completion --no-update-rc || true
+    fi
   fi
 fi
 

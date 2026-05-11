@@ -2,6 +2,7 @@
 set -euo pipefail
 
 OS="{{ .chezmoi.os }}"
+BREW_PREFIX="$HOME/.linuxbrew"
 
 echo "[chezmoi] Installing base tools for ${OS}..."
 
@@ -37,14 +38,14 @@ if [[ "$OS" == "linux" ]]; then
     echo "No apt found. Skipping system package installation."
   fi
 
-  if [[ ! -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
-    NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  if [[ ! -x "$BREW_PREFIX/bin/brew" ]]; then
+    NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" -- -b "$BREW_PREFIX"
   fi
 
-  if [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
-    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+  if [[ -x "$BREW_PREFIX/bin/brew" ]]; then
+    eval "$("$BREW_PREFIX/bin/brew" shellenv)"
   else
-    echo "Homebrew was not installed at /home/linuxbrew/.linuxbrew."
+    echo "Homebrew was not installed at $BREW_PREFIX."
     exit 1
   fi
 fi

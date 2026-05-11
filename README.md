@@ -34,6 +34,7 @@ run_onchange_after_10-install-packages.sh.tmpl
 run_onchange_after_20-setup-shell.sh.tmpl
 bootstrap/bootstrap-macos.sh           -> first-run macOS bootstrap helper
 bootstrap/bootstrap-ubuntu.sh          -> first-run Ubuntu/Debian bootstrap helper
+scripts/doctor.sh                      -> verify install and rendered config
 ```
 
 `private_` means chezmoi applies private permissions to the target path.
@@ -92,6 +93,12 @@ Update machine from Git:
 
 ```bash
 chezmoi update
+```
+
+Verify the installation:
+
+```bash
+bash scripts/doctor.sh
 ```
 
 ## Git workflow
@@ -159,7 +166,7 @@ Use templates, encrypted secrets, or a password manager for sensitive files.
 
 ## Machine-specific config
 
-The shell and terminal configs use OS and tool guards for optional integrations such as `brew`, `mise`, `direnv`, `jj`, `terraform`, `op`, `starship`, Java, and Android tooling. Ubuntu also installs Homebrew so the `Brewfile` can be applied there.
+The shell and terminal configs use OS and tool guards for optional integrations such as `brew`, `mise`, `direnv`, `jj`, `terraform`, `op`, `starship`, Java, and Android tooling. Ubuntu installs Homebrew in the current user's home directory so the `Brewfile` can be applied even on a root-only system.
 
 Prefer templates instead of separate config files per OS when behavior differs by platform.
 
