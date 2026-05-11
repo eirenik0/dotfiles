@@ -1,0 +1,93 @@
+local wezterm = require 'wezterm'
+local config = wezterm.config_builder and wezterm.config_builder() or {}
+
+local is_windows = wezterm.target_triple:find('windows') ~= nil
+
+local function command_exists(name)
+  local path_sep = package.config:sub(1, 1)
+  local path_env = os.getenv('PATH') or ''
+  local dir_sep = is_windows and ';' or ':'
+  local exts = is_windows and { '.exe', '.cmd', '.bat', '.ps1', '' } or { '' }
+
+  for dir in string.gmatch(path_env, "([^" .. dir_sep .. "]+)") do
+    for _, ext in ipairs(exts) do
+      local candidate = dir .. path_sep .. name .. ext
+      local file = io.open(candidate, 'rb')
+      if file then
+        file:close()
+        return true
+      end
+    end
+  end
+
+  return false
+end
+
+-- if appearance:find('Dark') then
+  -- config.color_scheme = 'Tokyo Night Storm (Gogh)'
+-- else
+--  config.color_scheme = 'Tokyo Night Light (Gogh)'
+-- end
+
+config.color_scheme = 'catppuccin-latte'
+
+config.font = wezterm.font_with_fallback({
+  'FiraCode Nerd Font',
+  'JetBrains Mono Nerd Font',
+  'Cascadia Code Nerd Font',
+  'Menlo',
+})
+config.font_size = 13.0
+config.line_height = 1.08
+config.enable_tab_bar = true
+config.hide_tab_bar_if_only_one_tab = true
+config.tab_max_width = 28
+config.window_padding = { left = 10, right = 10, top = 8, bottom = 6 }
+config.inactive_pane_hsb = { saturation = 0.92, brightness = 0.78 }
+config.scrollback_lines = 50000
+config.adjust_window_size_when_changing_font_size = false
+
+-- pi.dev requirement
+config.enable_kitty_keyboard = true
+
+local login_shell = os.getenv('SHELL') or os.getenv('COMSPEC') or (is_windows and 'cmd.exe' or '/bin/sh')
+
+local function plain_shell_args()
+  if is_windows then
+    return { login_shell }
+  end
+
+  return { login_shell, '-l' }
+end
+
+local function zellij_welcome_args()
+  if is_windows or not command_exists('zellij') then
+    return plain_shell_args()
+  end
+
+  return {
+    login_shell,
+    '-l',
+    '-c',
+    'exec zellij -l welcome',
+  }
+end
+
+-- Prefer Zellij when it is installed; otherwise fall back to a plain shell.
+config.default_prog = zellij_welcome_args()
+
+config.launch_menu = {
+  {
+    label = 'Plain shell',
+    args = plain_shell_args(),
+  },
+}
+
+if not is_windows and command_exists('zellij') then
+  table.insert(config.launch_menu, 1, {
+    label = 'Zellij welcome screen',
+    args = zellij_welcome_args(),
+  })
+end
+
+return config

@@ -1,0 +1,150 @@
+# Base PATH.
+path_prepend() {
+  [[ -d "$1" ]] || return
+
+  case ":$PATH:" in
+    *":$1:"*) ;;
+    *) PATH="$1:$PATH" ;;
+  esac
+}
+
+path_prepend "$HOME/bin"
+path_prepend "$HOME/.local/bin"
+path_prepend "/usr/local/bin"
+
+brew_bin=""
+for candidate in \
+  "$(command -v brew 2>/dev/null)" \
+  /opt/homebrew/bin/brew \
+  /usr/local/bin/brew \
+  /home/linuxbrew/.linuxbrew/bin/brew \
+  "$HOME/.linuxbrew/bin/brew"
+do
+  if [[ -n "$candidate" && -x "$candidate" ]]; then
+    brew_bin="$candidate"
+    break
+  fi
+done
+
+if [[ -n "$brew_bin" ]]; then
+  eval "$("$brew_bin" shellenv)"
+fi
+
+# WakaTime shell tracking without depending on Oh My Zsh.
+if command -v wakatime-cli >/dev/null 2>&1; then
+  export ZSH_WAKATIME_BIN="$(command -v wakatime-cli)"
+elif [[ -x "$HOME/.wakatime/wakatime-cli" ]]; then
+  export ZSH_WAKATIME_BIN="$HOME/.wakatime/wakatime-cli"
+fi
+
+_wakatime_heartbeat() {
+  (( WAKATIME_DO_NOT_TRACK )) && return
+
+  local wakatime_bin="${ZSH_WAKATIME_BIN:-$HOME/.wakatime/wakatime-cli}"
+  [[ -x "$wakatime_bin" ]] || return
+
+  local last_command="${1%% *}"
+  local root_directory
+
+  if [[ -f .wakatime-project ]]; then
+    IFS= read -r root_directory < .wakatime-project
+  fi
+
+  if [[ -z "$root_directory" ]]; then
+    root_directory="$(git rev-parse --show-toplevel 2>/dev/null)" || root_directory="Terminal"
+  fi
+
+  local offline_args=()
+  (( WAKATIME_DISABLE_OFFLINE )) && offline_args=(--disable-offline)
+
+  "$wakatime_bin" --write \
+    --plugin "zsh/1.0.0" \
+    --entity-type app \
+    --entity "$last_command" \
+    --project "${root_directory:t}" \
+    --language sh \
+    --timeout "${WAKATIME_TIMEOUT:-5}" \
+    "${offline_args[@]}" \
+    &>/dev/null </dev/null &!
+}
+
+autoload -Uz add-zsh-hook
+add-zsh-hook preexec _wakatime_heartbeat
+
+# User configuration
+
+# export MANPATH="/usr/local/man:$MANPATH"
+
+# You may need to manually set your language environment
+# export LANG=en_US.UTF-8
+
+# Preferred editor for local and remote sessions
+# if [[ -n $SSH_CONNECTION ]]; then
+#   export EDITOR='vim'
+# else
+#   export EDITOR='mvim'
+# fi
+
+# Compilation flags
+# export ARCHFLAGS="-arch x86_64"
+
+# Personal aliases can be placed here.
+# Created by `pipx` on 2023-12-24 17:57:46
+if [[ ! -o login ]] && command -v mise >/dev/null 2>&1; then
+  eval "$(mise activate zsh)"
+fi
+
+if command -v direnv >/dev/null 2>&1; then
+  eval "$(direnv hook zsh)"
+fi
+
+path_prepend "$HOME/Library/Android/sdk/platform-tools"
+path_prepend "$HOME/Android/Sdk/platform-tools"
+path_prepend "$HOME/.lmstudio/bin"
+
+{{ if eq .chezmoi.os "darwin" }}
+if command -v /usr/libexec/java_home >/dev/null 2>&1; then
+  java_home="$(/usr/libexec/java_home -v 24 2>/dev/null || true)"
+  [[ -n "$java_home" ]] && export JAVA_HOME="$java_home"
+fi
+{{ end }}
+
+# History updates
+# https://zsh.sourceforge.io/Doc/Release/Options.html#index-HISTIGNOREALLDUPS
+setopt share_history
+setopt hist_ignore_all_dups
+setopt hist_ignore_space
+
+# bun completions
+[[ -r "$HOME/.bun/_bun" ]] && source "$HOME/.bun/_bun"
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+path_prepend "$BUN_INSTALL/bin"
+
+[[ -d "$HOME/.zfunc" ]] && fpath+=~/.zfunc
+autoload -Uz compinit
+compinit
+
+if command -v jj >/dev/null 2>&1; then
+  source <(COMPLETE=zsh jj)
+fi
+
+autoload -U +X bashcompinit && bashcompinit
+if command -v terraform >/dev/null 2>&1; then
+  complete -o nospace -C "$(command -v terraform)" terraform
+fi
+
+# Added by Antigravity
+export EDITOR=nvim
+export VISUAL=nvim
+
+if command -v op >/dev/null 2>&1; then
+  eval "$(op completion zsh)"
+  compdef _op op
+fi
+
+# Starship prompt.
+if command -v starship >/dev/null 2>&1; then
+  eval "$(starship init zsh)"
+fi

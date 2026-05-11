@@ -1,8 +1,8 @@
 # Dotfiles
 
-Personal cross-machine development environment managed with [chezmoi](https://www.chezmoi.io/).
+Personal development environment managed with [chezmoi](https://www.chezmoi.io/).
 
-This repository is designed for macOS, Linux, WSL, local dev machines, and remote servers.
+This repository is set up for cross-platform Unix-like hosts, with bootstrap support for macOS and Ubuntu/Debian. Shell and terminal integrations are guarded so missing tools are skipped instead of breaking startup.
 
 ## Stack
 
@@ -12,7 +12,6 @@ This repository is designed for macOS, Linux, WSL, local dev machines, and remot
 - Zellij — terminal multiplexer
 - fzf — fuzzy finder
 - zoxide — smarter `cd`
-- atuin — shell history
 - direnv — project environment loading
 - mise — language/runtime manager
 - Homebrew Bundle — user-level CLI package management
@@ -27,34 +26,32 @@ dot_zshrc.tmpl                         -> ~/.zshrc
 dot_wezterm.lua.tmpl                   -> ~/.wezterm.lua
 private_dot_config/starship.toml       -> ~/.config/starship.toml
 private_dot_config/zellij/config.kdl   -> ~/.config/zellij/config.kdl
-private_dot_config/git/ignore          -> ~/.config/git/ignore
 Brewfile                               -> package list for Homebrew Bundle
 .githooks/pre-commit                   -> Git pre-commit secret scanner
 .gitleaks.toml                         -> Gitleaks rules
 run_once_before_00-install-base-tools.sh.tmpl
 run_onchange_after_10-install-packages.sh.tmpl
 run_onchange_after_20-setup-shell.sh.tmpl
+bootstrap/bootstrap-macos.sh           -> first-run macOS bootstrap helper
+bootstrap/bootstrap-ubuntu.sh          -> first-run Ubuntu/Debian bootstrap helper
 ```
 
 `private_` means chezmoi applies private permissions to the target path.
 
 ## Bootstrap on a new machine
 
+The bootstrap scripts use `DOTFILES_REPO` if set, otherwise they default to `git@github.com:eirenik0/dotfiles.git`.
+
 ### macOS
 
 ```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-brew install git chezmoi
-chezmoi init --apply git@github.com:YOUR_GITHUB_USERNAME/YOUR_DOTFILES_REPO.git
+curl -fsSL https://raw.githubusercontent.com/eirenik0/dotfiles/main/bootstrap/bootstrap-macos.sh | bash
 ```
 
 ### Ubuntu / Debian
 
 ```bash
-sudo apt update
-sudo apt install -y curl git ca-certificates
-sh -c "$(curl -fsLS get.chezmoi.io)"
-~/.local/bin/chezmoi init --apply git@github.com:YOUR_GITHUB_USERNAME/YOUR_DOTFILES_REPO.git
+curl -fsSL https://raw.githubusercontent.com/eirenik0/dotfiles/main/bootstrap/bootstrap-ubuntu.sh | bash
 ```
 
 Optional Linuxbrew bootstrap:
@@ -63,7 +60,7 @@ Optional Linuxbrew bootstrap:
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
 
-Then re-run:
+After installing Linuxbrew, re-run:
 
 ```bash
 chezmoi apply
@@ -162,7 +159,9 @@ Use templates, encrypted secrets, or a password manager for sensitive files.
 
 ## Machine-specific config
 
-Prefer templates instead of separate config files per OS.
+The shell and terminal configs use OS and tool guards for optional integrations such as `brew`, `mise`, `direnv`, `jj`, `terraform`, `op`, `starship`, Java, and Android tooling.
+
+Prefer templates instead of separate config files per OS when behavior differs by platform.
 
 Example:
 
@@ -184,16 +183,15 @@ This repo uses a layered approach:
 1. Bootstrap      — install Git, chezmoi, Homebrew if needed
 2. Base packages  — apt/brew dependencies
 3. Dotfiles       — zsh/starship/wezterm/zellij/git config
-4. Machine logic  — macOS/Linux/WSL/SSH-specific behavior
+4. Machine logic  — OS/tool guards and local-only settings
 ```
 
 ## Philosophy
 
 This setup is intended to be:
 
-- portable across macOS, Linux, WSL, and servers
+- portable across macOS and Linux where optional tools are installed
 - minimal and fast
 - safe to apply repeatedly
 - compatible with remote development
 - optimized for Zsh + Starship + WezTerm + Zellij
-
