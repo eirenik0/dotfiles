@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Re-run when this rendered script changes.
+OS="{{ .chezmoi.os }}"
+SOURCE_DIR="{{ .chezmoi.sourceDir }}"
+
+echo "[chezmoi] Configuring shell and Git hooks..."
+
+ZSH_PATH="$(command -v zsh || true)"
+
+if [[ -n "$ZSH_PATH" ]]; then
+  if [[ "$OS" == "darwin" || "$OS" == "linux" ]]; then
+    if [[ -w /etc/shells ]]; then
+      grep -qxF "$ZSH_PATH" /etc/shells || echo "$ZSH_PATH" >> /etc/shells
+    elif command -v sudo >/dev/null 2>&1; then
+      grep -qxF "$ZSH_PATH" /etc/shells 2>/dev/null || echo "$ZSH_PATH" | sudo tee -a /etc/shells >/dev/null
+    fi
+
+    if [[ "${SHELL:-}" != "$ZSH_PATH" ]]; then
+      chsh -s "$ZSH_PATH" || true
+    fi
+  fi
+fi
+
+if [[ -d "$SOURCE_DIR/.git" ]]; then
+  git -C "$SOURCE_DIR" config core.hooksPath .githooks
+fi

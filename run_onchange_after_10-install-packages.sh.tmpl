@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Re-run this script when Brewfile content changes.
+# Brewfile checksum: {{ include "Brewfile" | sha256sum }}
+
+OS="{{ .chezmoi.os }}"
+SOURCE_DIR="{{ .chezmoi.sourceDir }}"
+BREWFILE="${SOURCE_DIR}/Brewfile"
+
+echo "[chezmoi] Installing user packages for ${OS}..."
+
+if command -v brew >/dev/null 2>&1; then
+  brew update
+  brew bundle --file "$BREWFILE"
+else
+  echo "Homebrew not found. Skipping Brewfile."
+  echo "Install Homebrew/Linuxbrew if you want brew-managed CLI tools."
+fi
+
+if command -v fzf >/dev/null 2>&1; then
+  if [[ -x "$(brew --prefix 2>/dev/null)/opt/fzf/install" ]]; then
+    "$(brew --prefix)/opt/fzf/install" --key-bindings --completion --no-update-rc || true
+  fi
+fi
+
+if command -v mise >/dev/null 2>&1; then
+  mise install || true
+fi

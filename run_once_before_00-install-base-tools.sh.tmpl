@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+OS="{{ .chezmoi.os }}"
+
+echo "[chezmoi] Installing base tools for ${OS}..."
+
+if [[ "$OS" == "darwin" ]]; then
+  if ! command -v brew >/dev/null 2>&1; then
+    echo "Homebrew is not installed. Install Homebrew first, then re-run: chezmoi apply"
+    exit 1
+  fi
+
+  brew update
+  brew install git chezmoi || true
+fi
+
+if [[ "$OS" == "linux" ]]; then
+  if command -v apt >/dev/null 2>&1; then
+    sudo apt update
+    sudo apt install -y \
+      curl \
+      git \
+      ca-certificates \
+      build-essential \
+      zsh \
+      fzf \
+      direnv \
+      bat \
+      fd-find \
+      ripgrep \
+      jq \
+      unzip
+  else
+    echo "No apt found. Skipping system package installation."
+  fi
+fi
