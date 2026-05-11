@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "Checking staged files for secrets..."
+
+if [[ "${SKIP_SECRET_SCAN:-0}" == "1" ]]; then
+  echo "Secret scan skipped because SKIP_SECRET_SCAN=1"
+  exit 0
+fi
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "ERROR: gitleaks is not installed."
+  echo
+  echo "Install it:"
+  echo "  brew install gitleaks"
+  echo
+  echo "Or, if you really need to bypass once:"
+  echo "  SKIP_SECRET_SCAN=1 git commit ..."
+  exit 1
+fi
+
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+
+# Extract only staged files, not your whole working tree.
+# This avoids scanning unstaged local experiments.
+while IFS= read -r -d '' file; do
+  # Skip deleted files and git internals.
+  [[ -z "$file" ]] && continue
+
+  mkdir -p "$tmpdir/$(dirname "$file")"
+
+  if git show ":$file" > "$tmpdir/$file" 2>/dev/null; then
+    :
+  fi
+done < <(git diff --cached --name-only --diff-filter=ACMR -z)
+
+if [[ -z "$(find "$tmpdir" -type f -print -quit)" ]]; then
+  echo "No staged files to scan."
+  exit 0
+fi
+
+gitleaks dir "$tmpdir" \
+  --config .gitleaks.toml \
+  --redact \
+  --no-banner \
+  --verbose
+
+echo "Secret scan passed."

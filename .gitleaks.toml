@@ -1,0 +1,64 @@
+title = "Dotfiles secret scanning"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "generic-env-secret-assignment"
+description = "Generic secret-like assignment in dotfiles"
+regex = '''(?i)(?:^|[\s"'`])(?:export\s+)?([A-Z0-9_.-]*(?:API[_-]?KEY|ACCESS[_-]?TOKEN|AUTH[_-]?TOKEN|SECRET|PASSWORD|PASSWD|PRIVATE[_-]?KEY|CLIENT[_-]?SECRET)[A-Z0-9_.-]*)\s*[:=]\s*["'`]?([A-Za-z0-9_./+=:@%,$\-]{8,})["'`]?'''
+secretGroup = 2
+keywords = [
+  "API_KEY",
+  "api_key",
+  "TOKEN",
+  "token",
+  "SECRET",
+  "secret",
+  "PASSWORD",
+  "password",
+]
+
+[[rules]]
+id = "openai-like-api-key"
+description = "OpenAI-like API key"
+regex = '''\b(sk-(?:proj-)?[A-Za-z0-9_\-]{20,})\b'''
+secretGroup = 1
+keywords = [
+  "sk-",
+  "sk-proj-",
+]
+
+[[rules]]
+id = "anthropic-like-api-key"
+description = "Anthropic-like API key"
+regex = '''\b(sk-ant-[A-Za-z0-9_\-]{20,})\b'''
+secretGroup = 1
+keywords = [
+  "sk-ant-",
+]
+
+[[rules]]
+id = "github-like-token"
+description = "GitHub-like token"
+regex = '''\b(gh[pousr]_[A-Za-z0-9_]{20,})\b'''
+secretGroup = 1
+keywords = [
+  "ghp_",
+  "gho_",
+  "ghu_",
+  "ghs_",
+  "ghr_",
+]
+
+[[allowlists]]
+description = "Allow obvious placeholders and examples"
+regexes = [
+  '''(?i)example[_-]?token''',
+  '''(?i)dummy[_-]?secret''',
+  '''(?i)fake[_-]?api[_-]?key''',
+  '''(?i)your[_-]?api[_-]?key''',
+  '''(?i)<api[_-]?key>''',
+  '''(?i)<token>''',
+  '''(?i)changeme''',
+]

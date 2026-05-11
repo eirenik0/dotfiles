@@ -1,0 +1,27 @@
+// Minimal self-managed Zellij config.
+// Change this line to "serg_light" when you want the light UI instead.
+//theme "tokyo-night-storm"
+
+theme "catppuccin-latte"
+
+pane_frames true
+mouse_mode true
+copy_clipboard "system"
+scroll_buffer_size 50000
+session_serialization true
+pane_viewport_serialization true
+scrollback_lines_to_serialize 5000
+serialization_interval 60
+show_startup_tips false
+show_release_notes false
+osc8_hyperlinks true
+visual_bell false
+default_layout "default"
+
+ui {
+    pane_frames {
+        rounded_corners true
+        hide_session_name false
+    }
+}
+
