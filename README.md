@@ -40,7 +40,7 @@ bootstrap/bootstrap-ubuntu.sh          -> first-run Ubuntu/Debian bootstrap help
 
 ## Bootstrap on a new machine
 
-The bootstrap scripts use `DOTFILES_REPO` if set, otherwise they default to `git@github.com:eirenik0/dotfiles.git`.
+The bootstrap scripts use `DOTFILES_REPO` if set, otherwise they default to `https://github.com/eirenik0/dotfiles.git`.
 
 ### macOS
 
