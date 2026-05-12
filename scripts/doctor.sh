@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
 
 fail() {
@@ -20,6 +19,10 @@ require_cmd() {
 ok "checking chezmoi"
 require_cmd chezmoi
 ok "chezmoi $(chezmoi --version | head -n1)"
+
+BREWFILE_SOURCE="$(chezmoi source-path "$HOME/Brewfile")"
+ZSH_SOURCE="$(chezmoi source-path "$HOME/.zshrc")"
+WEZTERM_SOURCE="$(chezmoi source-path "$HOME/.wezterm.lua")"
 
 diff_output="$(chezmoi diff 2>&1 || true)"
 if [[ -n "$diff_output" ]]; then
@@ -43,18 +46,24 @@ fi
 eval "$("$brew_bin" shellenv)"
 ok "brew $("$brew_bin" --version | head -n1)"
 
-"$brew_bin" bundle check --file "$ROOT_DIR/Brewfile" >/dev/null
+"$brew_bin" bundle check --file "$BREWFILE_SOURCE" >/dev/null
 ok "Brewfile packages are installed"
 
 rendered_zsh="$(mktemp)"
 trap 'rm -f "$rendered_zsh" "${rendered_wezterm:-}"' EXIT
-chezmoi execute-template -f "$ROOT_DIR/dot_zshrc.tmpl" > "$rendered_zsh"
+chezmoi execute-template -f "$ZSH_SOURCE" > "$rendered_zsh"
 zsh -n "$rendered_zsh"
 ok "zsh template renders cleanly"
 
+require_cmd starship
+if ! zsh -ic 'typeset -f prompt_starship_precmd >/dev/null' >/dev/null 2>&1; then
+  fail "starship is installed, but interactive zsh did not load starship init"
+fi
+ok "interactive zsh loads starship"
+
 if command -v luac >/dev/null 2>&1; then
   rendered_wezterm="$(mktemp)"
-  chezmoi execute-template -f "$ROOT_DIR/dot_wezterm.lua.tmpl" > "$rendered_wezterm"
+  chezmoi execute-template -f "$WEZTERM_SOURCE" > "$rendered_wezterm"
   luac -p "$rendered_wezterm"
   ok "wezterm template renders cleanly"
 fi
