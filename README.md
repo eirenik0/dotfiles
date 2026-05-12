@@ -43,6 +43,12 @@ scripts/doctor.sh                      -> verify install and rendered config
 
 The bootstrap scripts clone `https://github.com/eirenik0/dotfiles.git` by default. Set `DOTFILES_REPO` if you want to bootstrap from a fork or another mirror.
 
+Do not run `chezmoi apply` before initialization. A fresh machine must run one of the bootstrap commands below, or this direct init command:
+
+```bash
+chezmoi init --apply https://github.com/eirenik0/dotfiles.git
+```
+
 ### macOS
 
 ```bash
@@ -68,6 +74,8 @@ chezmoi apply
 ```
 
 ## Daily usage
+
+These commands assume the machine has already been initialized with `chezmoi init` or one of the bootstrap scripts.
 
 Edit managed files through chezmoi:
 
