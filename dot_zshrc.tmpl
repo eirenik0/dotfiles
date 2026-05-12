@@ -71,6 +71,26 @@ _wakatime_heartbeat() {
 autoload -Uz add-zsh-hook
 add-zsh-hook preexec _wakatime_heartbeat
 
+# fzf-zellij support helper
+if command -v fzf-zellij >/dev/null 2>&1; then
+  fzf() {
+    case "$1" in
+      --bash|--zsh|--fish|--version|-h|--help|--man)
+        command fzf "$@"
+        ;;
+      *)
+        fzf-zellij "$@"
+        ;;
+    esac
+  }
+fi
+
+# fzf shell integration. Provides Oh My Zsh-like Ctrl-R history search,
+# plus Ctrl-T file search and Alt-C directory jump.
+if command -v fzf >/dev/null 2>&1; then
+  source <(fzf --zsh)
+fi
+
 # User configuration
 
 # export MANPATH="/usr/local/man:$MANPATH"
@@ -111,9 +131,37 @@ fi
 
 # History updates
 # https://zsh.sourceforge.io/Doc/Release/Options.html#index-HISTIGNOREALLDUPS
+HISTFILE=${HISTFILE:-$HOME/.zsh_history}
+HISTSIZE=100000
+SAVEHIST=100000
+setopt append_history
+setopt inc_append_history
 setopt share_history
+setopt extended_history
+setopt hist_ignore_dups
 setopt hist_ignore_all_dups
+setopt hist_save_no_dups
+setopt hist_find_no_dups
+setopt hist_expire_dups_first
 setopt hist_ignore_space
+setopt hist_reduce_blanks
+
+# Correct the previous command, similar to Oh My Zsh's `thefuck` plugin.
+# Example: type `gti status`, get an error, then type `fuck` to rerun as `git status`.
+if command -v thefuck >/dev/null 2>&1; then
+  export THEFUCK_REQUIRE_CONFIRMATION=true
+  eval "$(thefuck --alias)"
+fi
+
+# Oh My Zsh-like history search: type a prefix such as `cat `, then press
+# Up/Down to cycle only through history entries beginning with that text.
+autoload -Uz up-line-or-beginning-search down-line-or-beginning-search
+zle -N up-line-or-beginning-search
+zle -N down-line-or-beginning-search
+bindkey '^[[A' up-line-or-beginning-search
+bindkey '^[[B' down-line-or-beginning-search
+bindkey '^[OA' up-line-or-beginning-search
+bindkey '^[OB' down-line-or-beginning-search
 
 # bun completions
 [[ -r "$HOME/.bun/_bun" ]] && source "$HOME/.bun/_bun"
@@ -143,6 +191,9 @@ if command -v op >/dev/null 2>&1; then
   eval "$(op completion zsh)"
   compdef _op op
 fi
+
+# desktop
+export OLLAMA_HOST=${OLLAMA_HOST:-http://100.80.46.4:11434}
 
 # Starship prompt.
 if command -v starship >/dev/null 2>&1; then
