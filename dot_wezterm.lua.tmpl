@@ -1,42 +1,20 @@
 local wezterm = require 'wezterm'
-local config = wezterm.config_builder and wezterm.config_builder() or {}
-
-local is_windows = wezterm.target_triple:find('windows') ~= nil
-
-local function command_exists(name)
-  local path_sep = package.config:sub(1, 1)
-  local path_env = os.getenv('PATH') or ''
-  local dir_sep = is_windows and ';' or ':'
-  local exts = is_windows and { '.exe', '.cmd', '.bat', '.ps1', '' } or { '' }
-
-  for dir in string.gmatch(path_env, "([^" .. dir_sep .. "]+)") do
-    for _, ext in ipairs(exts) do
-      local candidate = dir .. path_sep .. name .. ext
-      local file = io.open(candidate, 'rb')
-      if file then
-        file:close()
-        return true
-      end
-    end
-  end
-
-  return false
+local config = {}
+if wezterm.config_builder then
+  config = wezterm.config_builder()
 end
 
+local appearance = wezterm.gui and wezterm.gui.get_appearance() or 'Dark'
 -- if appearance:find('Dark') then
   -- config.color_scheme = 'Tokyo Night Storm (Gogh)'
 -- else
 --  config.color_scheme = 'Tokyo Night Light (Gogh)'
 -- end
 
-config.color_scheme = 'catppuccin-latte'
+config.color_scheme = 'Catppuccin Latte'
 
-config.font = wezterm.font_with_fallback({
-  'FiraCode Nerd Font',
-  'JetBrains Mono Nerd Font',
-  'Cascadia Code Nerd Font',
-  'Menlo',
-})
+--config.font = wezterm.font_with_fallback({ 'JetBrains Mono' })
+config.font = wezterm.font_with_fallback({ 'FiraCode Nerd Font' })
 config.font_size = 13.0
 config.line_height = 1.08
 config.enable_tab_bar = true
@@ -50,44 +28,177 @@ config.adjust_window_size_when_changing_font_size = false
 -- pi.dev requirement
 config.enable_kitty_keyboard = true
 
-local login_shell = os.getenv('SHELL') or os.getenv('COMSPEC') or (is_windows and 'cmd.exe' or '/bin/sh')
+local login_shell = os.getenv('SHELL') or '/bin/zsh'
+local zellij_welcome = {
+  login_shell,
+  '-l',
+  '-c',
+  'if command -v op >/dev/null 2>&1; then eval "$(op signin)" || true; fi; exec /opt/homebrew/bin/zellij -l welcome',
+}
 
-local function plain_shell_args()
-  if is_windows then
-    return { login_shell }
-  end
-
-  return { login_shell, '-l' }
-end
-
-local function zellij_welcome_args()
-  if is_windows or not command_exists('zellij') then
-    return plain_shell_args()
-  end
-
-  return {
-    login_shell,
-    '-l',
-    '-c',
-    'exec zellij -l welcome',
-  }
-end
-
--- Prefer Zellij when it is installed; otherwise fall back to a plain shell.
-config.default_prog = zellij_welcome_args()
+-- Start Zellij through a login shell so restored panes inherit the full
+-- shell PATH instead of WezTerm's minimal macOS GUI environment.  Sign in to
+-- 1Password CLI once before Zellij starts so new zsh panes inherit OP_SESSION
+-- instead of each shell having to authenticate independently.
+config.default_prog = zellij_welcome
 
 config.launch_menu = {
   {
+    label = 'Zellij welcome screen',
+    args = zellij_welcome,
+  },
+  {
     label = 'Plain shell',
-    args = plain_shell_args(),
+    args = { login_shell, '-l' },
   },
 }
 
-if not is_windows and command_exists('zellij') then
-  table.insert(config.launch_menu, 1, {
-    label = 'Zellij welcome screen',
-    args = zellij_welcome_args(),
-  })
+
+-- Tabline
+local tabline = wezterm.plugin.require("https://github.com/michaelbrusegard/tabline.wez")
+
+-- Zellij updates the active pane title with the session name.  The default
+-- tabline.wez tab sections show cwd/process instead, so make tabline prefer
+-- WezTerm's explicit tab title and fall back to the active pane title.
+local function tab_title(title, tab)
+  if title == 'default' and tab.active_pane and tab.active_pane.title ~= '' then
+    return tab.active_pane.title
+  end
+  return title
 end
 
+local latte = {
+  base = '#eff1f5',
+  mantle = '#e6e9ef',
+  crust = '#dce0e8',
+  surface0 = '#ccd0da',
+  text = '#4c4f69',
+  subtext1 = '#5c5f77',
+  blue = '#1e66f5',
+  mauve = '#8839ef',
+  green = '#40a02b',
+  yellow = '#df8e1d',
+}
+
+-- tabline.wez already inserts one space after icons; Nerd Font glyphs still
+-- look visually tight, so use an extra trailing space for icon-bearing items.
+local function spaced_icon(icon)
+  return icon .. ' '
+end
+
+
+config.colors = config.colors or {}
+config.colors.tab_bar = {
+  background = latte.crust,
+}
+
+tabline.setup({
+  options = {
+    theme = 'Catppuccin Latte',
+    section_separators = {
+      left = wezterm.nerdfonts.pl_left_hard_divider,
+      right = wezterm.nerdfonts.pl_right_hard_divider,
+    },
+    component_separators = {
+      left = wezterm.nerdfonts.pl_left_soft_divider,
+      right = wezterm.nerdfonts.pl_right_soft_divider,
+    },
+    tab_separators = {
+      left = wezterm.nerdfonts.pl_left_hard_divider,
+      right = wezterm.nerdfonts.pl_right_hard_divider,
+    },
+    theme_overrides = {
+      normal_mode = {
+        a = { fg = latte.base, bg = latte.blue },
+        b = { fg = latte.blue, bg = latte.mantle },
+        c = { fg = latte.text, bg = latte.crust },
+      },
+      copy_mode = {
+        a = { fg = latte.base, bg = latte.yellow },
+        b = { fg = latte.yellow, bg = latte.mantle },
+        c = { fg = latte.text, bg = latte.crust },
+      },
+      search_mode = {
+        a = { fg = latte.base, bg = latte.green },
+        b = { fg = latte.green, bg = latte.mantle },
+        c = { fg = latte.text, bg = latte.crust },
+      },
+      window_mode = {
+        a = { fg = latte.base, bg = latte.mauve },
+        b = { fg = latte.mauve, bg = latte.mantle },
+        c = { fg = latte.text, bg = latte.crust },
+      },
+      tab = {
+        active = { fg = latte.base, bg = latte.blue },
+        inactive = { fg = latte.subtext1, bg = latte.mantle },
+        inactive_hover = { fg = latte.text, bg = latte.surface0 },
+      },
+    },
+  },
+  sections = {
+    tabline_a = { { 'mode', padding = { left = 1, right = 1 } } },
+    tabline_b = {
+      {
+        'workspace',
+        icon = spaced_icon(wezterm.nerdfonts.cod_terminal_tmux),
+        padding = { left = 1, right = 1 },
+      },
+    },
+    tabline_c = { ' ' },
+    tab_active = {
+      { 'index', padding = { left = 1, right = 1 } },
+      {
+        'tab',
+        icon = spaced_icon(wezterm.nerdfonts.md_tab),
+        padding = { left = 1, right = 1 },
+        fmt = tab_title,
+      },
+      { 'zoomed', padding = { left = 1, right = 1 } },
+    },
+    tab_inactive = {
+      { 'index', padding = { left = 1, right = 1 } },
+      {
+        'tab',
+        icon = spaced_icon(wezterm.nerdfonts.md_tab),
+        padding = { left = 1, right = 1 },
+        fmt = tab_title,
+      },
+    },
+    tabline_x = {},
+    tabline_y = {
+      {
+        'datetime',
+        icon = spaced_icon(wezterm.nerdfonts.md_clock_outline),
+        hour_to_icon = nil,
+        padding = { left = 1, right = 1 },
+      },
+    },
+    tabline_z = {
+      {
+        'cpu',
+        icon = spaced_icon(wezterm.nerdfonts.md_cpu_64_bit),
+        padding = { left = 1, right = 1 },
+      },
+      {
+        'ram',
+        icon = spaced_icon(wezterm.nerdfonts.md_memory),
+        padding = { left = 1, right = 1 },
+      },
+      {
+        'domain',
+        domain_to_icon = {
+          default = spaced_icon(wezterm.nerdfonts.md_monitor),
+          ssh = spaced_icon(wezterm.nerdfonts.md_ssh),
+          sshmux = spaced_icon(wezterm.nerdfonts.md_ssh),
+          wsl = spaced_icon(wezterm.nerdfonts.md_microsoft_windows),
+          docker = spaced_icon(wezterm.nerdfonts.md_docker),
+          unix = spaced_icon(wezterm.nerdfonts.cod_terminal_linux),
+        },
+        padding = { left = 1, right = 1 },
+      },
+    },
+  },
+})
+
 return config
+
