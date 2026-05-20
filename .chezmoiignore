@@ -1,0 +1,9 @@
+README.md
+Brewfile
+bootstrap
+bootstrap/**
+scripts
+scripts/**
+.gitleaks.toml
+.githooks
+.githooks/**
