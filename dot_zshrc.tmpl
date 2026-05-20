@@ -122,12 +122,12 @@ path_prepend "$HOME/Library/Android/sdk/platform-tools"
 path_prepend "$HOME/Android/Sdk/platform-tools"
 path_prepend "$HOME/.lmstudio/bin"
 
-{{ if eq .chezmoi.os "darwin" }}
+
 if command -v /usr/libexec/java_home >/dev/null 2>&1; then
   java_home="$(/usr/libexec/java_home -v 24 2>/dev/null || true)"
   [[ -n "$java_home" ]] && export JAVA_HOME="$java_home"
 fi
-{{ end }}
+
 
 # History updates
 # https://zsh.sourceforge.io/Doc/Release/Options.html#index-HISTIGNOREALLDUPS
@@ -199,3 +199,6 @@ export OLLAMA_HOST=${OLLAMA_HOST:-http://100.80.46.4:11434}
 if command -v starship >/dev/null 2>&1; then
   eval "$(starship init zsh)"
 fi
+
+# Setup ygg
+source <(ygg completion zsh)

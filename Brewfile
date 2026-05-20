@@ -4,6 +4,7 @@
 
 brew "starship"
 brew "zellij"
+brew "ygg"
 brew "zoxide"
 brew "fzf"
 brew "atuin"
