@@ -17,6 +17,7 @@ brew "jq"
 brew "gh"
 brew "gitleaks"
 brew "mise"
+brew "thefuck"
 brew "neovim"
 
 if OS.mac?
